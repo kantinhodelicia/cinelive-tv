@@ -17,7 +17,7 @@ jobs:
       uses: actions/setup-java@v4
       with:
         java-version: '17'
-        distribution: 'temurin'
+        distribution: 'zulu'
         cache: gradle
 
     - name: Fix gradlew line endings
@@ -28,9 +28,15 @@ jobs:
       working-directory: android
       run: chmod +x gradlew
 
+    - name: Check versions
+      working-directory: android
+      run: |
+        java -version
+        ./gradlew --version
+
     - name: Build with Gradle
       working-directory: android
-      run: ./gradlew assembleDebug
+      run: ./gradlew assembleDebug --no-daemon --stacktrace
 
     - name: Upload APK
       uses: actions/upload-artifact@v4

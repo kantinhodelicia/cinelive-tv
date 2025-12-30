@@ -1,65 +1,117 @@
 package com.cinelive.tv
 
 import android.annotation.SuppressLint
+import android.graphics.Bitmap
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.View
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.ProgressBar
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
-    private val cineliveUrl = "https://cinelive.djuntemon.com" // Production URL
+    private lateinit var progressBar: ProgressBar
+    private lateinit var errorLayout: LinearLayout
+    private lateinit var retryButton: Button
+    
+    // URL
+    private val cineliveUrl = "https://cinelive.djuntemon.com"
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main) // Inflate from XML
         
-        // Enable immersive fullscreen mode
+        // Disable Action Bar
+        supportActionBar?.hide()
+        
+        // Initialize Views
+        webView = findViewById(R.id.webView)
+        progressBar = findViewById(R.id.progressBar)
+        errorLayout = findViewById(R.id.errorLayout)
+        retryButton = findViewById(R.id.retryButton)
+        
+        // Enable immersive mode
         enableImmersiveMode()
         
-        // Create and configure WebView
-        webView = WebView(this).apply {
-            layoutParams = android.view.ViewGroup.LayoutParams(
-                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                android.view.ViewGroup.LayoutParams.MATCH_PARENT
-            )
+        // Configure WebView
+        setupWebView()
+        
+        // Load Content
+        webView.loadUrl(cineliveUrl)
+        
+        // Setup Retry Button
+        retryButton.setOnClickListener {
+            errorLayout.visibility = View.GONE
+            progressBar.visibility = View.VISIBLE
+            webView.reload()
+        }
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun setupWebView() {
+        webView.settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            databaseEnabled = true
+            cacheMode = WebSettings.LOAD_DEFAULT
+            mediaPlaybackRequiresUserGesture = false
+            allowFileAccess = true
+            allowContentAccess = true
             
-            settings.apply {
-                javaScriptEnabled = true
-                domStorageEnabled = true
-                databaseEnabled = true
-                cacheMode = WebSettings.LOAD_DEFAULT
-                mediaPlaybackRequiresUserGesture = false
-                allowFileAccess = true
-                allowContentAccess = true
-                
-                // Enable hardware acceleration for smooth video
-                setRenderPriority(WebSettings.RenderPriority.HIGH)
-                
-                // Enable zoom for accessibility
-                setSupportZoom(false)
-                builtInZoomControls = false
+            // Hardware Acceleration
+            setRenderPriority(WebSettings.RenderPriority.HIGH)
+            
+            // Zoom disabled
+            setSupportZoom(false)
+            builtInZoomControls = false
+            
+            // Custom User Agent
+            userAgentString = "$userAgentString CineLiveTV/1.0"
+        }
+
+        webView.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
+                view.loadUrl(url)
+                return true
+            }
+
+            override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                super.onPageStarted(view, url, favicon)
+                progressBar.visibility = View.VISIBLE
+                errorLayout.visibility = View.GONE
+            }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                progressBar.visibility = View.GONE
             }
             
-            webViewClient = object : WebViewClient() {
-                override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
-                    view.loadUrl(url)
-                    return true
+            override fun onReceivedError(
+                view: WebView?,
+                request: WebResourceRequest?,
+                error: WebResourceError?
+            ) {
+                super.onReceivedError(view, request, error)
+                // Only show error for the main page, not for missing assets/analytics
+                if (request?.isForMainFrame == true) {
+                    webView.visibility = View.INVISIBLE
+                    progressBar.visibility = View.GONE
+                    errorLayout.visibility = View.VISIBLE
                 }
             }
-            
-            webChromeClient = WebChromeClient()
-            
-            // Load CineLive
-            loadUrl(cineliveUrl)
         }
         
-        setContentView(webView)
+        webView.webChromeClient = WebChromeClient()
     }
 
     private fun enableImmersiveMode() {
@@ -74,26 +126,31 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        // Handle D-Pad navigation
+        // If error view is showing, allow D-Pad to focus retry button automatically
+        if (errorLayout.visibility == View.VISIBLE) {
+             return super.onKeyDown(keyCode, event)
+        }
+    
+        // Handle D-Pad navigation for WebView
         when (keyCode) {
             KeyEvent.KEYCODE_DPAD_UP -> {
-                webView.evaluateJavascript("document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowUp', keyCode: 38}))", null)
+                injectKey("ArrowUp", 38)
                 return true
             }
             KeyEvent.KEYCODE_DPAD_DOWN -> {
-                webView.evaluateJavascript("document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowDown', keyCode: 40}))", null)
+                injectKey("ArrowDown", 40)
                 return true
             }
             KeyEvent.KEYCODE_DPAD_LEFT -> {
-                webView.evaluateJavascript("document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowLeft', keyCode: 37}))", null)
+                injectKey("ArrowLeft", 37)
                 return true
             }
             KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                webView.evaluateJavascript("document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowRight', keyCode: 39}))", null)
+                injectKey("ArrowRight", 39)
                 return true
             }
             KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
-                webView.evaluateJavascript("document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', keyCode: 13}))", null)
+                injectKey("Enter", 13)
                 return true
             }
             KeyEvent.KEYCODE_BACK -> {
@@ -104,6 +161,13 @@ class MainActivity : AppCompatActivity() {
             }
         }
         return super.onKeyDown(keyCode, event)
+    }
+    
+    private fun injectKey(key: String, code: Int) {
+        webView.evaluateJavascript(
+            "document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', {key: '$key', keyCode: $code}))",
+            null
+        )
     }
 
     override fun onResume() {

@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">CineLive</string>
+    <string name="loading">Carregando...</string>
+    <string name="error_title">Sem Conexão</string>
+    <string name="error_description">Verifique sua internet e tente novamente.</string>
+    <string name="retry">Tentar Novamente</string>
 </resources>

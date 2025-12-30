@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/cl_background">
+
+    <!-- WebView -->
+    <WebView android:id="@+id/webView" android:layout_width="match_parent" android:layout_height="match_parent" />
+
+    <!-- Loading Spinner -->
+    <ProgressBar android:id="@+id/progressBar" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:indeterminateTint="@color/cl_primary" android:visibility="visible" />
+
+    <!-- Error View -->
+    <LinearLayout android:id="@+id/errorLayout" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:gravity="center" android:orientation="vertical" android:visibility="gone" android:padding="32dp">
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/error_title" android:textColor="@color/white" android:textSize="24sp" android:textStyle="bold" android:layout_marginBottom="8dp"/>
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/error_description" android:textColor="@color/cl_text_error" android:textSize="16sp" android:layout_marginBottom="24dp"/>
+
+        <Button android:id="@+id/retryButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/retry" android:backgroundTint="@color/cl_primary" android:textColor="@color/white" />
+
+    </LinearLayout>
+
+</FrameLayout>
